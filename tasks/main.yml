@@ -1,2 +1,59 @@
 ---
 # tasks file for nisslave
+
+- name: install yp  and turn on services
+  yum: name=yp* state=latest
+  notify:
+   - turn on ypbind
+   - turn on ypserv
+   - turn on rpcbind
+
+- name: add nismaster to yp.conf
+  lineinfile: dest=/etc/yp.conf
+                backup=yes
+                state=present
+                line=ypserver {{ nisslave_masterip }}
+
+- name: add nisdomain to network config
+  lineinfile: dest=/etc/sysconfig/network
+                backup=yes
+                state=present
+                insertafter='^HOSTNAME*'
+                line= {{ nisslave_nisdomain }}
+
+- name: start rpcbind
+  service: name=rpcbind state=started
+
+# The following step is replacement
+# for ypinit interactive commands
+- name: set nismaster to push yp to slaves
+  delegate_to: {{ nisslave_masterip }}
+  lineinfile: dest=/var/yp/Makefile
+                backup=yes
+                state=present
+                regexp=^NOPUSH=true
+                line=NOPUSH=false
+
+
+- name: add nisslave to /var/yp/ypservers on nismaster
+  delegate_to: {{ nisslave_masterip }}
+  lineinfile: dest=/var/yp/ypserver
+                state=present
+                create=yes
+                line={{ nisslave_slavename }}
+
+- name: update the nismaster map
+  delegate_to: {{ nisslave_masterip }}
+  shell: ypinit -u {{ nisslave_nisdomain }}
+
+- name: setup nismaster hosts file
+  delegate_to: {{ nisslave_masterip }}
+  lineinfile: dest=/etc/hosts
+                backup=yes
+                line= {{ item }}
+                state=present
+                insertafter=*localhost*
+  with_items:
+   - {{ nisslave_slaveip }} {{ nisslave_slavefqdn }}
+   - {{ nisslave_masterip }} {{ nisslave_masterfqdn }}
+
