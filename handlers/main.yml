@@ -1,2 +1,28 @@
 ---
 # handlers file for nisslave
+- name: turn on ypbind
+  service: name=ypbind enabled=yes 
+
+- name: turn on ypserv
+  service: name=ypserv enabled=yes 
+
+- name: turn on rpcbind
+  service: name=rpcbind enabled=yes 
+
+- name: start rpcbind
+  service: name=rpcbind state=started 
+
+- name: start ypxfrd
+  service: name=ypxfrd state=started
+
+- name: start ypbind
+  service: name=ypbind state=started
+
+- name: start ypserv
+  service: name=ypserv state=started
+
+- name: restart ypbind
+  service: name=ypbind state=restarted
+
+- name: restart ypserv
+  service: name=ypserv state=restarted
